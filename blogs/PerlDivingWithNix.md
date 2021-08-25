@@ -442,7 +442,11 @@ Et Voila we have a Perl Module that interfaces with the current version of ZBar!
 
 The keen-eyed among you will have noticed that there is a bit of trickery happening with the `postPatch` hook.
 
-For some reason the propagatedBuildInputs were not being added to the sandbox for the makefile through the use of `NIX_LDFLAGS` but instead had to be added manually by linking them directly. 
+Perl has the incredibly unhelpful error command:
+
+`Warning (mostly harmless): No library found for -lzbar`
+
+For some reason the propagatedBuildInputs were not being added to the sandbox for the makefile through the use of `propagatedBuildInputs` (which adds paths to `NIX_LDFLAGS`) but instead had to be added manually by linking them directly. 
 
 It is unclear to me why this is and perhaps a issue needs to be opened that addresses this.
 
