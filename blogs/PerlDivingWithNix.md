@@ -24,7 +24,7 @@ As you can imagine there is a lot of Perl which is dynamically loaded in the Apa
 
 A word to the wise... there is a lot that goes into an Apache config file and the wonder of Nix is that it abstracts most of it away including the loading of [Apache modules](https://www.ibm.com/docs/en/i/7.2?topic=functionality-apache-modules) of which *mod_perl* is one. Unless you really know what your doing it's best to use the `extraConfig` option, which appends configuration to the Nix auto-generated one as it has many twists and turns. It is possible to override the configuration file completely with the `configFile` option, but make sure you understand the auto-generated one first.
 
-```
+```nix
 services.httpd = {
   enable = true;
   enablePerl = true;
@@ -38,7 +38,7 @@ So before even looking into the code contained in the project my first step was 
 
 CPAN stands for **Comprehensive Perl Archive Network** and serves as the central repository for Perl modules. One way of defining the dependencies of a Perl project is writing plain text file called `cpanfile` that requires all the modules to be loaded from CPAN.
 
-```
+```nix
 requires 'CGI', '>= 4.51, < 5.0'; # libcgi-pm-perl
 requires 'Tie::IxHash'; # libtie-ixhash-perl
 requires 'LWP::Authen::Digest'; # libwww-perl
@@ -80,7 +80,7 @@ Hmmm rather bare, didn't even include Zbar as part of its `propagatedBuildInputs
 **SideNote**: `propagatedBuildInputs` here meaning anything that is a runtime dependency whereas `buildInputs` are for dependencies that are exclusively build-time dependencies (eg. Tests and make file generators) - [Perl Packaging in Nix](https://nixos.org/manual/nixpkgs/stable/#ssec-perl-packaging)
 
 After fixing the inputs it was time to give it a try.
-```
+```nix
 buildInputs = [ TestMore ExtUtilsMakeMaker ];
 propagatedBuildInputs = [ zbar PerlMagick ];
 ```
@@ -135,7 +135,7 @@ index ad6fc56..97bd2c0 100644
 
 Applying patches in nix is the simplest thing in the world just add it to the [patch phase](https://nixos.org/manual/nixpkgs/stable/#ssec-patch-phase) and your golden. The manual is a bit sparse in this regard so the code looks something like.
 
-```
+```nix
 patchPhase = [ version.patch ];
 ```
 
@@ -340,7 +340,7 @@ So lets substitute the current package with an this old one.
 A handy tool I found along the way was (Nix package versions)[https://lazamar.co.uk/nix-versions/] which gives a nice web interface for finding older versions of packages and giving you the revision that they were in.
 
 Armed with a really hacky zbar overlay lets try this again.
-```
+```nix
 zbar = final: prev: {
      zbar = (import (builtins.fetchGit {
        url = "https://github.com/NixOS/nixpkgs/";
@@ -352,20 +352,20 @@ zbar = final: prev: {
 
 Sidenote: A more nixy way of doing this would be to import this ancient version of zbar as an input into your flake:
 
-```
+```nix
 inputs.nixpkgs-ancient.url = "github:NixOS/nixpkgs?rev=12408341763b8f2f0f0a88001d9650313f6371d5";
 inputs.nixpkgs-ancient.flake = false;
 ```
 
 and then use it via:
 
-```
+```nix
 zbar = final.callPackage ./zbar.nix { pkgs = final; pkgsAncient = import nixpkgs-ancient { system = final.system; }; };
 ```
 
 where `zbar.nix` is:
 
-```
+```nix
 { pkgs, pkgsAncient }:
 
 let zbar = pkgsAncient.zbar; in
@@ -415,7 +415,7 @@ It seems that when forking ZBar mchehab, the new maintainer, also made the sage 
 
 Armed with this new Perl module that we **knew** working with the latest ZBar library it was possible to construct a new `buildPerlPackage` that reused the src from the ZBar packaged in nixpkgs.
 
-```
+```nix
 BarcodeZBar = buildPerlPackage {
   pname = "Barcode-ZBar";
   version = "0.04";
