@@ -136,7 +136,7 @@ index ad6fc56..97bd2c0 100644
 Applying patches in nix is the simplest thing in the world just add it to the [patch phase](https://nixos.org/manual/nixpkgs/stable/#ssec-patch-phase) and your golden. The manual is a bit sparse in this regard so the code looks something like.
 
 ```nix
-patchPhase = [ version.patch ];
+patchPhase = [ ./version.patch ];
 ```
 
 This is possible as `buildPerlPackage` is built on top of [`stdenv`](https://nixos.org/manual/nixpkgs/stable/#idm140737320528768) allowing us to customise everything in the usual Nixy way.
