@@ -61,7 +61,7 @@ However in one case it failed drastically, and truth be told I was stuck on whic
 
 The intransigent bugger was (Barcode::Zbar)[https://metacpan.org/release/SPADIX/Barcode-ZBar-0.04/view/ZBar.pm] a module that provides a Perl interface to the (ZBar Barcode Reader)[https://github.com/mchehab/zbar] (OpenFoodFacts has the rather excellent feature where you can just scan a bar code as a discovery mechanism).
 
-The a fore mentioned `nix-generate-from-cpan` kindly provided
+The aforementioned `nix-generate-from-cpan` kindly provided
 ```nix
  BarcodeZBar = buildPerlPackage {
     pname = "Barcode-ZBar";
