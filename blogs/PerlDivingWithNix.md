@@ -14,13 +14,11 @@ OpenFoodFacts I see your quote and raise you a Newman!
 
 Anyway enough preamble...
 
-This project represents a deviation from the common usage of Nix to create [derivations](https://nixos.org/manual/nix/unstable/expressions/derivations.html) that package binaries, instead its main application [Product Opener](https://github.com/openfoodfacts/openfoodfacts-server) is a large app that requires many languages and dependencies made up mainly of a front-end and back-end web services.
+This project represents a deviation from the common usage of Nix to create [derivations](https://nixos.org/manual/nix/unstable/expressions/derivations.html) that package binaries, instead its main application [Product Opener](https://github.com/openfoodfacts/openfoodfacts-server) is a large app that requires many languages and dependencies that provides a web service.
 
 The back-end is served using Apache with the Perl Module (modules being how Apache is extended) [mod_perl](https://en.wikipedia.org/wiki/Mod_perl) enabled, which embeds a Perl interpreter into the Apache server which handles the production of dynamic content. 
 
-The back-end is served using Apache with [mod_perl](https://en.wikipedia.org/wiki/Mod_perl) which embeds a Perl interpreter into the Apache server which handles the production of dynamic content. 
-
-As you can imagine there is a lot of Perl which is dynamically loaded in the Apache config file.
+As you can imagine there is a lot of Perl which is dynamically loaded by the Apache config file.
 
 A word to the wise... there is a lot that goes into an Apache config file and the wonder of Nix is that it abstracts most of it away including the loading of [Apache modules](https://www.ibm.com/docs/en/i/7.2?topic=functionality-apache-modules) of which *mod_perl* is one. Unless you really know what your doing it's best to use the `extraConfig` option, which appends configuration to the Nix auto-generated one as it has many twists and turns. It is possible to override the configuration file completely with the `configFile` option, but make sure you understand the auto-generated one first.
 
