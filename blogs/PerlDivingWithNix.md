@@ -1,7 +1,5 @@
 # Perl Diving with Nix
 
-**Brief Note on What Summer of Nix is?**
-
 This is a record of my time in the Summer of Nix holding my breath and diving into the depths of Nix to gain some Perls of wisdom.
 
 Going through the issues assigned to my team I came across the the package for [OpenFoodFacts](https://world.openfoodfacts.org/discover) a collaborative database that collects and provides open data on 1 million food products from around the world and counting!
@@ -10,18 +8,21 @@ Not knowing what we are eating seems like a strange thing but really how much do
 
 "We are living in a world today where lemonade is made from artificial flavors and furniture polish is made from real lemons." -- Alfred E. Newman
 
-OpenFoodFacts I see your quote and raise you a Newman!
+OpenFoodFacts I see your [quote](https://world.openfoodfacts.org/discover) and raise you a Newman!
 
 Anyway enough preamble...
 
-This project represents a deviation from the common usage of Nix to create [derivations](https://nixos.org/manual/nix/unstable/expressions/derivations.html) that package binaries, instead its main application [Product Opener](https://github.com/openfoodfacts/openfoodfacts-server) is a large app that requires many languages and dependencies that provides a web service.
+This project represents a deviation from the common usage of Nix to create [derivations](https://nixos.org/manual/nix/unstable/expressions/derivations.html) that package binaries, instead its main application [Product Opener](https://github.com/openfoodfacts/openfoodfacts-server) is a large app that requires many languages and dependencies which end up as a web service.
 
-The back-end is served using Apache with the Perl Module (modules being how Apache is extended) [mod_perl](https://en.wikipedia.org/wiki/Mod_perl) enabled, which embeds a Perl interpreter into the Apache server which handles the production of dynamic content. 
+The back-end is served using Apache with the Perl Module (modules being how Apache is extended) [mod_perl](https://en.wikipedia.org/wiki/Mod_perl) enabled, this embeds a Perl interpreter into the Apache server which handles the production of dynamic content. 
 
 As you can imagine there is a lot of Perl which is dynamically loaded by the Apache config file.
 
-A word to the wise... there is a lot that goes into an Apache config file and the wonder of Nix is that it abstracts most of it away including the loading of [Apache modules](https://www.ibm.com/docs/en/i/7.2?topic=functionality-apache-modules) of which *mod_perl* is one. Unless you really know what your doing it's best to use the `extraConfig` option, which appends configuration to the Nix auto-generated one as it has many twists and turns. It is possible to override the configuration file completely with the `configFile` option, but make sure you understand the auto-generated one first.
+A word to the wise... there is a lot that goes into an Apache config file and the wonder of Nix is that it abstracts most of it away including the loading of the above-mentioned [Apache modules](https://www.ibm.com/docs/en/i/7.2?topic=functionality-apache-modules). Unless you really know what your doing it's best to use the `extraConfig` option, which appends configuration to the Nix auto-generated one as it has many twists and turns. It is possible to override the configuration file completely with the `configFile` option, but make sure you understand the auto-generated one first.
 
+To have a look for your self run `nix build nixpkgs#apacheHttpd && cd result/conf`.
+
+A minimal ApacheHttpd configuration in Nix:
 ```nix
 services.httpd = {
   enable = true;
@@ -32,32 +33,33 @@ services.httpd = {
 ```
 That `enablePerl` option is what loads up *mod_perl* for us :hands-up:
 
-So before even looking into the code contained in the project my first step was looking at all the Perl dependencies that were cataloged in the cpanfile... there were 65...
+Slight detour into Perl: CPAN stands for **Comprehensive Perl Archive Network** and serves as the central repository for Perl modules. One way of defining the dependencies of a Perl project is writing plain text file called `cpanfile` that requires all the modules to be loaded from CPAN.
 
-CPAN stands for **Comprehensive Perl Archive Network** and serves as the central repository for Perl modules. One way of defining the dependencies of a Perl project is writing plain text file called `cpanfile` that requires all the modules to be loaded from CPAN.
+So before even looking into the code contained in the project my first step was looking at all the Perl dependencies that were cataloged in the cpanfile... of which there were 65...
 
 ```nix
 requires 'CGI', '>= 4.51, < 5.0'; # libcgi-pm-perl
 requires 'Tie::IxHash'; # libtie-ixhash-perl
 requires 'LWP::Authen::Digest'; # libwww-perl
 requires 'LWP::Simple'; # libwww-perl
+etc.
 ```
 
-In the nix community there is a ever growing list of *2nix* tools that *translates* one package managers lock files into something that fits within the nix system of immutable declarative packaging. It was at this point that I started wondering if there were any tools like that for Perl.
+In the nix community there is a ever growing list of *2nix* tools that *translates* one package managers lock files into something that fits within the nix ecosystem of immutable declarative packaging. It was at this point that I started wondering if there were any tools like that for Perl.
 
-The short answer is no, but there are some there is some great support for adding something from CPAN (a repository containing it seems the Perl universe) to nixpkgs, in the form of the function `nix-generate-from-cpan` which is also exposed as a utility in nixpkgs.
+The short answer is no, but there are some there is some great support for adding something from [meta::cpan](https://metacpan.org/) (a repository containing it seems the Perl universe) to nixpkgs, in the form of the function `nix-generate-from-cpan` which is also exposed as a utility in nixpkgs.
 
 `nix run nixpkgs#nix-generate-from-cpan <CPAN::MODULE>` for the win!
 
-So a few `nix run nixpkgs#nix-generate-from-cpan <Perl::Module>`'s later I had 30 odd shiny new Perl packages :)
+So a few `nix run nixpkgs#nix-generate-from-cpan <Perl::Module>`'s later I had 40 odd shiny new Perl packages :)
 
-This utility was great but perhaps the reason there isn't a *2nix* tool for the Perl world is that it is not fool proof... in my experience it just worked 70% of the time with the other 25% of the time just minor fixes needed (either adding pkgs to the propagated inputs or generating a Perl package that was needed by one of my dependencies).
+This utility was great but perhaps the reason there isn't a *2nix* tool for the Perl world is that it is not fool proof... in my experience it *just worked™* 70% of the time with the other 30% of the time needing minor fixes (either adding pkgs to the propagated inputs or `nix-generate-from-cpan` a Perl package that was needed as a dependency).
 
-This might be an issue with the Perl ecosystem itself as a `cpanfile` != a lock file and as the above example demonstrates it can be very vague (`>=4.51, < 5.0`) and vagueness is the enemy of reproducible and thus the enemy of Nix.
+This might be an issue with the Perl ecosystem itself as a cpanfile `!=` a lock file and as the above example demonstrates it can be very vague (`>=4.51, < 5.0`) and vagueness is the enemy of reproducible and thus the enemy of Nix.
 
 However in one case it failed drastically, and truth be told I was stuck on which way to go for a few days.
 
-The intransigent bugger was (Barcode::Zbar)[https://metacpan.org/release/SPADIX/Barcode-ZBar-0.04/view/ZBar.pm] a module that provides a Perl interface to the (ZBar Barcode Reader)[https://github.com/mchehab/zbar] (OpenFoodFacts has the rather excellent feature where you can just scan a bar code as a discovery mechanism).
+The intransigent bugger was (Barcode::Zbar)[https://metacpan.org/release/SPADIX/Barcode-ZBar-0.04/view/ZBar.pm] a module that provides a Perl interface to the (ZBar Barcode Reader)[https://github.com/mchehab/zbar] OpenFoodFacts has the rather excellent feature where you can just scan a bar code as a discovery mechanism.
 
 The aforementioned `nix-generate-from-cpan` kindly provided
 ```nix
@@ -73,7 +75,7 @@ The aforementioned `nix-generate-from-cpan` kindly provided
   };
 ```
 
-Hmmm rather bare, didn't even include Zbar as part of its `propagatedBuildInputs`.
+Hmmm rather bare, didn't even include the Zbar binary as part of its `propagatedBuildInputs`.
 
 **SideNote**: `propagatedBuildInputs` here meaning anything that is a runtime dependency whereas `buildInputs` are for dependencies that are exclusively build-time dependencies (eg. Tests and make file generators) - [Perl Packaging in Nix](https://nixos.org/manual/nixpkgs/stable/#ssec-perl-packaging)
 
@@ -89,7 +91,7 @@ perl5.34.0-Barcode-ZBar> ZBar.xs: In function 'XS_Barcode__ZBar_version':
 perl5.34.0-Barcode-ZBar> ZBar.xs:202:9: error: too few arguments to function 'zbar_version'
 ```
 
-Hmmmm it seems this module was last updated in 2009 and since then the `zbar` project has been forked and continued developing. ZBar project now uses semver versioning while the module is stuck in the past with `major.minor` versioning.
+Hmmmm on investigation it seems this module was last updated in 2009 and since then the `zbar` project has been forked and continued developing. The ZBar project now uses semver versioning while the module is stuck in the past with `major.minor` versioning.
 
 Nixpkgs topping repology's list for [Projects up to date](https://repology.org/repositories/statistics/newest) obviously meant that it wasn't slouching when it came to zbar and had zoomed ahead of the Perl module to version `0.23.90` (it was never clear what version the module was expecting but 2009 put it at either `0.9` or `0.10`).
 
@@ -98,6 +100,7 @@ It appeared to me that I had two options
 2. More realistically create an overlay for zbar for a version that was compatible with the Perl Module.
 
 ## Option 1 - The Patch
+
 Summer of Nix is all about learning so I figured it was worth a shot and after a quick watch of the excellent [How to create a patch for any package](https://www.youtube.com/watch?v=5K_2RSjbdXc) by Jon Ringer (go check it out) and a quick fiddle in git I had a patch file.
 
 ```
@@ -348,11 +351,13 @@ zbar = final: prev: {
 };
 ```
 
-Sidenote: A more nixy way of doing this would be to import this ancient version of zbar as an input into your flake:
+Sidenote: A more nixy way of doing this would be to import this ancient version of nixpkgs as an input into your flake:
 
 ```nix
-inputs.nixpkgs-ancient.url = "github:NixOS/nixpkgs?rev=12408341763b8f2f0f0a88001d9650313f6371d5";
-inputs.nixpkgs-ancient.flake = false;
+inputs.nixpkgs-ancient = {
+    url = "github:NixOS/nixpkgs?rev=12408341763b8f2f0f0a88001d9650313f6371d5";
+    flake = false;
+}
 ```
 
 and then use it via:
@@ -411,7 +416,7 @@ Interesting...
 
 It seems that when forking ZBar mchehab, the new maintainer, also made the sage decision to include all the myriad interfaces for the library and maintain them!
 
-Armed with this new Perl module that we **knew** working with the latest ZBar library it was possible to construct a new `buildPerlPackage` that reused the src from the ZBar packaged in nixpkgs.
+Armed with this new Perl module that we **knew** worked with the latest ZBar library it was possible to construct a new `buildPerlPackage` that reused the src from the ZBar packaged in nixpkgs.
 
 ```nix
 BarcodeZBar = buildPerlPackage {
@@ -420,6 +425,7 @@ BarcodeZBar = buildPerlPackage {
   src = "${zbar.src}/perl";
   postPatch = ''
     substituteInPlace Makefile.PL --replace "-lzbar" "-L${zbar.lib}/lib -lzbar"
+    # This test requires network access
     rm t/Processor.t
   '';
   doCheck = true;
@@ -443,8 +449,14 @@ Perl has the incredibly unhelpful error command:
 
 `Warning (mostly harmless): No library found for -lzbar`
 
-For some reason the propagatedBuildInputs were not being added to the sandbox for the makefile through the use of `propagatedBuildInputs` (which adds paths to `NIX_LDFLAGS`) but instead had to be added manually by linking them directly. 
+As you can imagine this is unquestionably harmful and causes the tests, and of lesser importance the final output 😛, to fail.
+
+This happens because for some reason our propagatedBuildInputs not being added to the sandbox for the Makefile through the use of `propagatedBuildInputs` (which adds paths to `NIX_LDFLAGS`). Instead these had to be added manually by linking them directly in the Makefile.
 
 It is unclear to me why this is and perhaps a issue needs to be opened that addresses this.
 
-The test file `Processor.t` also had to be removed as it required network access something that is not allowed in the pure nix build system!
+#### A quick refresher on `NIX_LDFLAGS`.
+
+Nix differs drastically from other Linux distributions (and in difference is strength) and does not store header files and libraries in the traditional `/usr/include` where the compiler expects them, instead everything is in the Nix Store... Which means that somehow we need to make the compiler aware of the correct paths to these headers and libraries. This is where `NIX_LDFLAGS` (and its partner in compile `NIX_CFLAGS_COMPILE`) come in. The ALL CAPS should give you a clue that they are *environment variables* which are used to furnish the compiler (by way of command line arguments) with these correct paths. This is all done using shell-scripts that wrap around the actual compiler, for more information see the [C section](https://nixos.wiki/wiki/C) on the Nixos Wiki.
+
+
