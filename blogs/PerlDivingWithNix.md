@@ -59,7 +59,7 @@ This might be an issue with the Perl ecosystem itself as a cpanfile `!=` a lock 
 
 However in one case it failed drastically, and truth be told I was stuck on which way to go for a few days.
 
-The intransigent bugger was (Barcode::Zbar)[https://metacpan.org/release/SPADIX/Barcode-ZBar-0.04/view/ZBar.pm] a module that provides a Perl interface to the (ZBar Barcode Reader)[https://github.com/mchehab/zbar] OpenFoodFacts has the rather excellent feature where you can just scan a bar code as a discovery mechanism.
+The intransigent bugger was [Barcode::Zbar](https://metacpan.org/release/SPADIX/Barcode-ZBar-0.04/view/ZBar.pm) a module that provides a Perl interface to the [ZBar Barcode Reader](https://github.com/mchehab/zbar) OpenFoodFacts has the rather excellent feature where you can just scan a bar code as a discovery mechanism.
 
 The aforementioned `nix-generate-from-cpan` kindly provided
 ```nix
@@ -330,15 +330,15 @@ error: builder for '/nix/store/gww59146rs399rjc3fnawrjng4pqf6dl-perl5.32.1-Barco
 
 ## Option 2: The Overlay
 
-Naive approach 2 lets just overlay the source code with `0.10` (a version from 2009)[https://github.com/mchehab/zbar/releases/tag/0.10]... 
+Naive approach 2 lets just overlay the source code with `0.10` [a version from 2009](https://github.com/mchehab/zbar/releases/tag/0.10)... 
 
 This wasn't very successful as it seems the steps to build ZBar has [changed significantly](https://github.com/NixOS/nixpkgs/commit/57ffe86efa988788b6c58a1e3b682ee8f80c74a3#diff-2793faccce1027ffbb3d7e8658912e32422bdb8907db45e295f97c2768c526c2) between versions.
 
-However I chose 0.10 not only for the fact that it was from 2009 but also this was the (oldest version)[https://github.com/NixOS/nixpkgs/blob/7147ef8e80ae9f5d7f13b0c29bbf7a4d27982d3d/pkgs/tools/graphics/zbar/default.nix] in nixpkgs.
+However I chose 0.10 not only for the fact that it was from 2009 but also this was the [oldest version](https://github.com/NixOS/nixpkgs/blob/7147ef8e80ae9f5d7f13b0c29bbf7a4d27982d3d/pkgs/tools/graphics/zbar/default.nix) in nixpkgs.
 
 So lets substitute the current package with an this old one. 
 
-A handy tool I found along the way was (Nix package versions)[https://lazamar.co.uk/nix-versions/] which gives a nice web interface for finding older versions of packages and giving you the revision that they were in.
+A handy tool I found along the way was [Nix package versions](https://lazamar.co.uk/nix-versions/) which gives a nice web interface for finding older versions of packages and giving you the revision that they were in.
 
 Armed with a really hacky zbar overlay lets try this again.
 ```nix
